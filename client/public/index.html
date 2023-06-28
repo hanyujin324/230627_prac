@@ -10,34 +10,111 @@
       content="Web site created using create-react-app"
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
+    <!-- Naver Map API -->
+    <script
+      type="text/javascript"
+      src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=키값 "
+    ></script>
+
     <title>React App</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+    <div id="root">
+      <form id="search-form">
+        <label for="start-input">출발지:</label>
+        <input type="text" id="start-input" />
+        <label for="end-input">목적지:</label>
+        <input type="text" id="end-input" />
+        <button type="submit">검색</button>
+      </form>
+      <div id="map" style="min-height: 400px;"></div>
+    </div>
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+    <script>
+      // 출발지와 목적지 검색 및 경로 표시 함수
+      function searchRoute() {
+        var startInput = document.getElementById('start-input');
+        var endInput = document.getElementById('end-input');
+        var map = new naver.maps.Map('map', {
+          zoom: 10,
+          zoomControl: true,
+          zoomControlOptions: {
+            position: naver.maps.Position.TOP_RIGHT,
+          },
+        });
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+        // 출발지, 목적지 마커 생성
+        var startMarker = new naver.maps.Marker({ map: map });
+        var endMarker = new naver.maps.Marker({ map: map });
+
+        // 경로 그리기
+        var directions = new naver.maps.Directions({
+          map: map,
+          // 도로 안내 결과 처리
+          renderOptions: {
+            preserveViewport: true,
+            polylineOptions: {
+              strokeColor: '#f00',
+              strokeWeight: 5,
+            },
+          },
+        });
+
+        // 검색 버튼 클릭 시 이벤트 처리
+        document.getElementById('search-form').addEventListener('submit', function (e) {
+          e.preventDefault();
+
+          // 출발지, 목적지 설정
+          var start = startInput.value;
+          var end = endInput.value;
+
+          // 경로 검색 API 호출
+          var apiUrl = `https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving?start=${start}&goal=${end}&option=trafast&key=1o608ovly2 `;
+
+          axios
+            .get(apiUrl)
+            .then(function (response) {
+              var data = response.data;
+
+              // 경로 정보 추출
+              var path = data.route.path.map(function (point) {
+                return new naver.maps.LatLng(point.latitude, point.longitude);
+              });
+
+              // 출발지, 목적지 좌표 설정
+              var startLatLng = path[0];
+              var endLatLng = path[path.length - 1];
+
+              // 출발지, 목적지 마커 위치 설정
+              startMarker.setPosition(startLatLng);
+              endMarker.setPosition(endLatLng);
+
+              // 경로 그리기
+              directions.route({
+                start: startLatLng,
+                destination: endLatLng,
+                waypoints: [],
+              });
+
+              // 출발지, 목적지를 포함한 경로가 보이도록 지도 영역 조정
+              var bounds = new naver.maps.LatLngBounds();
+              path.forEach(function (latLng) {
+                bounds.extend(latLng);
+              });
+              map.fitBounds(bounds);
+            })
+            .catch(function (error) {
+              console.error(error);
+            });
+        });
+      }
+
+      naver.maps.onJSContentLoaded = function () {
+        searchRoute();
+      };
+    </script>
   </body>
 </html>
