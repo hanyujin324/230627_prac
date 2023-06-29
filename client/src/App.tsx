@@ -22,7 +22,7 @@ function KakaoMap() {
   useEffect(() => {
     const script = document.createElement('script');
     script.async = true;
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=키값&libraries=services`;
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=키값넣기&libraries=services`;
     document.head.appendChild(script);
 
     script.onload = () => {
